@@ -1,4 +1,4 @@
-lass MyHashSet {
+class MyHashSet {
 
     boolean[] set;
 
