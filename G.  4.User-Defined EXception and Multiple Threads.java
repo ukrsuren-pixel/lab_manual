@@ -1,25 +1,31 @@
-import java.util.concurrent.CountDownLatch;
 class Foo {
-    private CountDownLatch firstDone;
-    private CountDownLatch secondDone;
-   public Foo() {
-        firstDone = new CountDownLatch(1);
-        secondDone = new CountDownLatch(1);
-    }
-   public void first(Runnable printFirst) {
-  // printFirst.run() outputs "first".
-        printFirst.run();
-   firstDone.countDown();
-    }
-    public void second(Runnable printSecond) throws InterruptedException {
-   firstDone.await();
-   // printSecond.run() outputs "second".
-        printSecond.run();
-    secondDone.countDown();
-    }
-    public void third(Runnable printThird) throws InterruptedException {
-        secondDone.await();
-        // printThird.run() outputs "third".
-        printThird.run();
-    }
+    private final Object lock = new Object();
+    private int state = 1;
+ public Foo() {
+ }
+ public void first(Runnable printFirst) throws InterruptedException {
+        synchronized (lock) {
+         printFirst.run();
+          state = 2;
+          lock.notifyAll();
+        }
+	}
+ public void second(Runnable printSecond) throws InterruptedException {
+        synchronized (lock) {
+            while (state != 2) {
+            	lock.wait();
+            }
+            printSecond.run();
+            state = 3;
+            lock.notifyAll();
+        }
+	}
+ public void third(Runnable printThird) throws InterruptedException {
+        synchronized (lock) {
+            while (state != 3) {
+                lock.wait();
+            }
+            printThird.run();
+        }
+	}
 }
